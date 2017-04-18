@@ -1,0 +1,115 @@
+---
+title: "Basic Inferential Data Analysis"
+author: "Mariia Danilenko"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Introduction  
+We're going to analyze the ToothGrowth data in the R datasets package. For this project we only use the techniques from class, even if there's other approaches worth considering.  
+
+# Analysis    
+
+## Given data
+
+ ***ToothGrowth data***:  
+ 
+The response is the length (**len** column) of odontoblasts (cells responsible for tooth growth) in **60** guinea pigs. Each animal received one of three dose (**dose** column) levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods: orange juice (OJ) or ascorbic acid (VC) (**supp** column).
+Take a look to observing data:
+```{r}
+str(ToothGrowth)
+```
+
+##Visual analysis
+
+Make an introduction plot of length factored by supplement type and depends on dose:  
+```{r, message=FALSE, warning=FALSE, fig.height=3}
+library(lattice)
+par(mfcol=c(2,1))
+xyplot(len ~ dose | factor(supp,labels=c("Orange juice","Ascorbic acid")),
+       data = ToothGrowth, type=c("p","smooth"),
+       xlab = "Dose", col.line="red",
+       ylab="Tooth length")
+```
+Notice correlation between dose and length. Before we begin analysis, let's plot boxplot factored by dose:  
+```{r plot, fig.height=3}
+with(ToothGrowth, 
+     boxplot(len~dose, xlab="Dose", ylab="Tooth length", 
+             col=c("orange","yellow", "lightgreen")))
+```
+
+## Calculations
+Cut given data into six groups: 2 sup types and 3 dose types:  
+```{r}
+TGOJ0.5<-subset(ToothGrowth, ToothGrowth$supp=="OJ" & ToothGrowth$dose==0.5)
+TGVC0.5<-subset(ToothGrowth, ToothGrowth$supp=="VC" & ToothGrowth$dose==0.5)
+TGVC1<-subset(ToothGrowth, ToothGrowth$supp=="VC" & ToothGrowth$dose==1)
+TGOJ1<-subset(ToothGrowth, ToothGrowth$supp=="OJ" & ToothGrowth$dose==1)
+TGOJ2<-subset(ToothGrowth, ToothGrowth$supp=="OJ" & ToothGrowth$dose==2)
+TGVC2<-subset(ToothGrowth, ToothGrowth$supp=="VC" & ToothGrowth$dose==2)
+```
+
+And also select two subsets with orange juice and ascorbic acid:  
+```{r}
+TGOJ<-subset(ToothGrowth, ToothGrowth$supp=="OJ")
+TGVC<-subset(ToothGrowth, ToothGrowth$supp=="VC")
+```
+
+### Comparisons of doses  
+Comparison between 0.5 and 1 doses
+```{r}
+t.test(cbind(TGOJ0.5$len,TGVC0.5$len), cbind(TGOJ1$len,TGVC1$len), 
+       alternative = "less")$conf.int
+```
+We reject $H_0$ hypothesis and claim that length mean for 0.5 dose is less than length mean for 1 dose.
+Comparison between 1 and 2 doses
+```{r}
+t.test(cbind(TGOJ1$len,TGVC1$len), cbind(TGOJ2$len,TGVC2$len), 
+       alternative = "less")$conf.int
+```
+We reject $H_0$ hypothesis and claim that length mean for 1 dose is less than length mean for 2 dose.  
+
+We don't need compare 0.5 and 2 doses because of transitivity.  
+
+Also, we checked same hypothesis for different sups separately and got same results. R code for these calculations you can find in the appendix.
+Finally we claim that dose changes are significant for tooth growing.   
+
+### Comparisons of sups  
+
+We compared two sup types for every dose:  
+
+```{r}
+t.test(TGOJ0.5$len,TGVC0.5$len, alternative = "greater")$conf.int
+t.test(TGOJ1$len,TGVC1$len, alternative = "greater")$conf.int
+t.test(TGOJ2$len,TGVC2$len, alternative = "greater")$conf.int
+```
+We reject $H_0$ hypothesis in first and second models. It means that orange juice is more effective than ascorbic acid on 0.5 and 1 doses.  
+We fail to reject $H_0$ hypothesis in fhird model, however we can explain it:  
+Exist maximum level of vitamin C. which pigs can absorb. That's why in 2 dose sup type doesn't matter.
+   
+# Results  
+We made following conclusions:  
+ * dose growing is significant for tooth growing;    
+ * sup type impact on tooth length until 2 dose.  
+
+# Appendix  
+Doses hypothesis separately for sups:
+```{r}
+# for orange juice
+t.test(TGOJ0.5$len,TGOJ1$len, alternative = "less")$conf.int
+t.test(TGOJ1$len,TGOJ2$len, alternative = "less")$conf.int
+# for ascorbic acid
+t.test(TGVC0.5$len,TGVC1$len, alternative = "less")$conf.int
+t.test(TGVC1$len,TGVC2$len, alternative = "less")$conf.int
+```
+We reject $H_0$ hypothesis for all 4 models.
+
+
+Sup whole hypothesis:  
+```{r}
+t.test(TGOJ$len,TGVC$len, alternative = "greater")$conf.int
+```
+We reject $H_0$ hypothesis.
+
